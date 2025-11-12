@@ -1,0 +1,38 @@
+# .github/workflows/codeql.yml
+name: "CodeQL Security Scan"
+
+on:
+  pull_request:
+    branches: [ main ]  # Run when PR is opened to main
+  push:
+    branches: [ main ]  # Also run on direct pushes to main (if allowed)
+  schedule:
+    - cron: '0 0 * * 1'  # Weekly full scan on Mondays
+
+jobs:
+  analyze:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+      pull-requests: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: python
+        queries: security-and-quality
+
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v3
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:python"
