@@ -1,0 +1,2 @@
+- Do not scan requirements.txt or .pre-commit-config.yaml
+- Assume all package versions are correct and up-to-date
