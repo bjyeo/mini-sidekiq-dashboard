@@ -9,8 +9,8 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from supabase import Client
 
-from src.repositories.base import BaseJobRepository
 from src.models.enums import JobStatus, LogLevel
+from src.repositories.base import BaseJobRepository
 from src.database.connection import get_supabase_client
 
 
@@ -22,14 +22,14 @@ class SupabaseJobRepository(BaseJobRepository):
     using the Supabase Python client.
     """
 
-    def __init__(self, client: Optional[Client] = None):
+    def __init__(self, _: Optional[Client] = None):
         """
         Initialize the repository.
 
         Args:
             client: Supabase client instance (optional, will use default if not provided)
         """
-        self.client = client or get_supabase_client()
+        self.client = get_supabase_client()
 
     def create(self, job_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -115,7 +115,7 @@ class SupabaseJobRepository(BaseJobRepository):
             print(
                 f"Warning: RPC function not available, using fallback query: {e}")
 
-            now = datetime.utcnow().isoformat()
+            now = datetime.now().isoformat()
             response = (
                 self.client.table('jobs')
                 .select('*')
@@ -155,7 +155,7 @@ class SupabaseJobRepository(BaseJobRepository):
         """
         update_data: Dict[str, Any] = {
             'status': status.value,
-            'updated_at': datetime.utcnow().isoformat()
+            'updated_at': datetime.now().isoformat()
         }
 
         if error_message is not None:
@@ -204,7 +204,7 @@ class SupabaseJobRepository(BaseJobRepository):
             self.client.table('jobs')
             .update({
                 'retry_count': new_count,
-                'updated_at': datetime.utcnow().isoformat()
+                'updated_at': datetime.now().isoformat()
             })
             .eq('id', job_id)
             .execute()
@@ -368,7 +368,7 @@ class SupabaseJobRepository(BaseJobRepository):
             'error_message': None,
             'started_at': None,
             'completed_at': None,
-            'updated_at': datetime.utcnow().isoformat()
+            'updated_at': datetime.now().isoformat()
         }
 
         response = (

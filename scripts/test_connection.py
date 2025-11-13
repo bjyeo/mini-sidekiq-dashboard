@@ -14,16 +14,16 @@ Usage:
     python scripts/test_connection.py
 """
 
-from datetime import datetime
-from src.models.enums import JobStatus
-from src.database.connection import get_supabase_client
 import sys
 from pathlib import Path
+from datetime import datetime
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+from src.models.enums import JobStatus
+from src.database.connection import get_supabase_client
 
 def print_section(title: str):
     """Print a formatted section header"""
