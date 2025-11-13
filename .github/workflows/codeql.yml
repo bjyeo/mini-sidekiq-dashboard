@@ -3,7 +3,7 @@ name: "CodeQL Security Scan"
 
 on:
   pull_request:
-    branches: [ main ]  # Run when PR is opened to main
+    branches: [ main, develop ]  # Run when PR is opened
   push:
     branches: [ main ]  # Also run on direct pushes to main (if allowed)
   schedule:
