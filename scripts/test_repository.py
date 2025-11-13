@@ -76,9 +76,9 @@ def test_repository():
 
         # Test 3: Add logs
         print("\n[4/12] Adding log entries...")
-        log1 = repo.add_log(job_id, "Job processing started", LogLevel.INFO)
-        log2 = repo.add_log(job_id, "Email template loaded", LogLevel.DEBUG)
-        log3 = repo.add_log(
+        repo.add_log(job_id, "Job processing started", LogLevel.INFO)
+        repo.add_log(job_id, "Email template loaded", LogLevel.DEBUG)
+        repo.add_log(
             job_id, "Warning: Slow SMTP response", LogLevel.WARNING)
         print(f"✓ Added {3} log entries")
 
