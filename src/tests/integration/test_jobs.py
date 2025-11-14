@@ -91,3 +91,100 @@ def test_list_jobs_returns_200(client):
     data = response.json()
     assert isinstance(data, list)
     assert len(data) >= 2
+
+
+@pytest.mark.integration
+def test_delete_job_returns_204(client):
+    """
+    Test that deleting a job returns 204 No Content.
+    """
+    # Create a job first
+    job_data = {
+        "type": "cleanup_task",
+        "payload": {"task_id": "456"}
+    }
+    create_response = client.post("/jobs", json=job_data)
+    job_id = create_response.json()["id"]
+
+    # Delete the job
+    response = client.delete(f"/jobs/{job_id}")
+
+    assert response.status_code == 204
+
+    # Verify job is deleted
+    get_response = client.get(f"/jobs/{job_id}")
+    assert get_response.status_code == 404
+
+
+@pytest.mark.integration
+def test_delete_nonexistent_job_returns_404(client):
+    """
+    Test that deleting a non-existent job returns 404 Not Found.
+    """
+    fake_id = "00000000-0000-0000-0000-000000000000"
+    response = client.delete(f"/jobs/{fake_id}")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.integration
+def test_update_job_status_returns_200(client):
+    """
+    Test that updating a job status returns 200 OK.
+    """
+    # Create a job first
+    job_data = {
+        "type": "process_order",
+        "payload": {"order_id": "789"}
+    }
+    create_response = client.post("/jobs", json=job_data)
+    job_id = create_response.json()["id"]
+
+    # Update status to running
+    update_data = {"status": "running"}
+    response = client.patch(f"/jobs/{job_id}/status", json=update_data)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == job_id
+    assert data["status"] == "running"
+    assert data["started_at"] is not None
+
+
+@pytest.mark.integration
+def test_update_nonexistent_job_status_returns_404(client):
+    """
+    Test that updating status of non-existent job returns 404.
+    """
+    fake_id = "00000000-0000-0000-0000-000000000000"
+    update_data = {"status": "running"}
+    response = client.patch(f"/jobs/{fake_id}/status", json=update_data)
+
+    assert response.status_code == 404
+
+
+@pytest.mark.integration
+def test_get_pending_jobs_returns_200(client):
+    """
+    Test that getting pending jobs returns 200 OK with list of pending jobs.
+    """
+    # Create some pending jobs
+    client.post("/jobs", json={
+        "type": "task_1",
+        "payload": {"data": "test1"}
+    })
+    client.post("/jobs", json={
+        "type": "task_2",
+        "payload": {"data": "test2"}
+    })
+
+    response = client.get("/jobs/pending")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    # Should have at least the 2 we just created
+    assert len(data) >= 2
+    # All jobs should have pending status
+    for job in data:
+        assert job["status"] == "pending"
