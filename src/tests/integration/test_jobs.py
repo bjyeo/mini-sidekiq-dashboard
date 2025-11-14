@@ -15,8 +15,34 @@ def client():
     return TestClient(app)
 
 
+@pytest.fixture
+def cleanup_jobs(client):
+    """
+    Clean up jobs created during testing.
+    
+    This fixture tracks job IDs created during a test and cleans them up
+    after the test completes, preventing database pollution.
+    
+    Usage:
+        def test_example(client, cleanup_jobs):
+            response = client.post("/jobs", json={...})
+            job_id = response.json()["id"]
+            cleanup_jobs.append(job_id)
+            # Test continues...
+    """
+    created_job_ids = []
+    yield created_job_ids
+    # Cleanup after test
+    for job_id in created_job_ids:
+        try:
+            client.delete(f"/jobs/{job_id}")
+        except:
+            # Ignore errors during cleanup (e.g., job already deleted)
+            pass
+
+
 @pytest.mark.integration
-def test_create_job_returns_201(client):
+def test_create_job_returns_201(client, cleanup_jobs):
     """
     Test that creating a job returns 201 Created.
     """
@@ -33,10 +59,13 @@ def test_create_job_returns_201(client):
     assert data["type"] == "send_email"
     assert data["status"] == "pending"
     assert data["payload"] == {"to": "test@example.com", "subject": "Test"}
+    
+    # Track for cleanup
+    cleanup_jobs.append(data["id"])
 
 
 @pytest.mark.integration
-def test_get_job_by_id_returns_200(client):
+def test_get_job_by_id_returns_200(client, cleanup_jobs):
     """
     Test that getting a job by ID returns 200 OK.
     """
@@ -47,6 +76,7 @@ def test_get_job_by_id_returns_200(client):
     }
     create_response = client.post("/jobs", json=job_data)
     job_id = create_response.json()["id"]
+    cleanup_jobs.append(job_id)
 
     # Get the job by ID
     response = client.get(f"/jobs/{job_id}")
@@ -71,19 +101,22 @@ def test_get_nonexistent_job_returns_404(client):
 
 
 @pytest.mark.integration
-def test_list_jobs_returns_200(client):
+def test_list_jobs_returns_200(client, cleanup_jobs):
     """
     Test that listing jobs returns 200 OK with array of jobs.
     """
     # Create a couple of jobs first
-    client.post("/jobs", json={
+    response1 = client.post("/jobs", json={
         "type": "send_email",
         "payload": {"to": "user1@example.com"}
     })
-    client.post("/jobs", json={
+    cleanup_jobs.append(response1.json()["id"])
+    
+    response2 = client.post("/jobs", json={
         "type": "process_data",
         "payload": {"data_id": "123"}
     })
+    cleanup_jobs.append(response2.json()["id"])
 
     response = client.get("/jobs")
 
@@ -94,7 +127,7 @@ def test_list_jobs_returns_200(client):
 
 
 @pytest.mark.integration
-def test_delete_job_returns_204(client):
+def test_delete_job_returns_204(client, cleanup_jobs):
     """
     Test that deleting a job returns 204 No Content.
     """
@@ -105,6 +138,7 @@ def test_delete_job_returns_204(client):
     }
     create_response = client.post("/jobs", json=job_data)
     job_id = create_response.json()["id"]
+    # Note: No need to track for cleanup since we're testing deletion
 
     # Delete the job
     response = client.delete(f"/jobs/{job_id}")
@@ -128,7 +162,7 @@ def test_delete_nonexistent_job_returns_404(client):
 
 
 @pytest.mark.integration
-def test_update_job_status_returns_200(client):
+def test_update_job_status_returns_200(client, cleanup_jobs):
     """
     Test that updating a job status returns 200 OK.
     """
@@ -139,6 +173,7 @@ def test_update_job_status_returns_200(client):
     }
     create_response = client.post("/jobs", json=job_data)
     job_id = create_response.json()["id"]
+    cleanup_jobs.append(job_id)
 
     # Update status to running
     update_data = {"status": "running"}
@@ -164,19 +199,22 @@ def test_update_nonexistent_job_status_returns_404(client):
 
 
 @pytest.mark.integration
-def test_get_pending_jobs_returns_200(client):
+def test_get_pending_jobs_returns_200(client, cleanup_jobs):
     """
     Test that getting pending jobs returns 200 OK with list of pending jobs.
     """
     # Create some pending jobs
-    client.post("/jobs", json={
+    response1 = client.post("/jobs", json={
         "type": "task_1",
         "payload": {"data": "test1"}
     })
-    client.post("/jobs", json={
+    cleanup_jobs.append(response1.json()["id"])
+    
+    response2 = client.post("/jobs", json={
         "type": "task_2",
         "payload": {"data": "test2"}
     })
+    cleanup_jobs.append(response2.json()["id"])
 
     response = client.get("/jobs/pending")
 
