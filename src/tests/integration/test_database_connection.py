@@ -10,6 +10,7 @@ These tests verify:
 
 import pytest
 from datetime import datetime
+from unittest.mock import patch
 from src.models.enums import JobStatus
 from src.database.connection import get_supabase_client
 
@@ -189,3 +190,30 @@ class TestDatabaseConnection:
         # Verify deletion
         verify_response = supabase_client.table('jobs').select('*').eq('id', job_id).execute()
         assert len(verify_response.data) == 0
+
+
+@pytest.mark.integration
+def test_missing_supabase_config_raises_error():
+    """Test that missing Supabase configuration raises ValueError."""
+    from src.database.connection import get_supabase_client
+    from src.config.settings import get_settings, Settings
+
+    # Clear the cache first
+    get_supabase_client.cache_clear()
+    get_settings.cache_clear()
+
+    # Mock Settings to return None for supabase_url and supabase_key
+    with patch('src.database.connection.get_settings') as mock_get_settings:
+        mock_settings = Settings(
+            supabase_url="",
+            supabase_key="",
+            supabase_db_password="dummy"
+        )
+        mock_get_settings.return_value = mock_settings
+
+        # Should raise ValueError
+        with pytest.raises(ValueError, match="Missing required Supabase configuration"):
+            get_supabase_client()
+
+    # Clear cache to restore normal state
+    get_supabase_client.cache_clear()
